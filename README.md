@@ -27,4 +27,4 @@ Each `skills/<name>` becomes a symlink at `~/.claude/skills/<name>`, so edits he
 
 | Skill | Usage | Purpose |
 |---|---|---|
-| [handoff](skills/handoff/SKILL.md) | `/handoff`, `/handoff resume` | Write HANDOFF.md at the end of a session; resume from it in a fresh one. |
+| [handoff](skills/handoff/SKILL.md) | `/handoff [name]`, `/handoff resume [name]`, `/handoff list`, `/handoff delete [name]` | Write HANDOFF.md (or HANDOFF-&lt;name&gt;.md per workstream) at the end of a session; resume from it in a fresh one; list or delete finished ones. |
