@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<title>{{Guide utilisateur – Feature name}}</title>
+<!-- Template of the user-guide skill. Replace every {{…}} and remove the sections you do not need.
+     Rebuild the PDF: see the skill, step 5 (Chrome headless or the project's script). -->
+<style>
+  @page { size: A4; margin: 18mm 18mm 20mm 18mm; }
+  :root {
+    --ink: #0f172a;
+    --muted: #475569;
+    --soft: #64748b;
+    --line: #e2e8f0;
+    --brand: #1d4ed8;
+    --brand-soft: #eff6ff;
+    --brand-line: #bfdbfe;
+    --warn: #92400e;
+    --warn-soft: #fffbeb;
+    --warn-line: #fcd34d;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    background: #fff;
+    color: var(--ink);
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.55;
+  }
+  h1, h2, h3 { line-height: 1.2; margin: 0; text-wrap: balance; }
+  h2 {
+    font-size: 17pt;
+    font-weight: 650;
+    margin: 0 0 3mm;
+    padding-top: 1mm;
+    break-after: avoid;
+  }
+  h2 .num { color: var(--brand); margin-right: 2.5mm; }
+  h3 { font-size: 11.5pt; font-weight: 650; margin: 6mm 0 1.5mm; break-after: avoid; }
+  p { margin: 0 0 2.5mm; text-wrap: pretty; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
+  li { margin-bottom: 1.2mm; }
+  strong { font-weight: 650; }
+  .ui {
+    font-weight: 600;
+    color: var(--brand);
+  }
+
+  /* Cover */
+  .cover {
+    height: 255mm;
+    display: flex;
+    flex-direction: column;
+    break-after: page;
+  }
+  .cover .brand {
+    display: flex; align-items: center; gap: 3mm;
+    font-weight: 700; font-size: 12pt; letter-spacing: .01em;
+  }
+  .cover .brand .mark {
+    width: 9mm; height: 9mm; border-radius: 1.5mm; background: var(--brand);
+    display: grid; place-items: center; color: #fff; font-size: 13pt;
+  }
+  .cover .brand small {
+    display: block; font-size: 7.5pt; font-weight: 600; letter-spacing: .18em; color: var(--soft);
+  }
+  .cover .title { margin-top: 48mm; }
+  .cover .eyebrow {
+    font-size: 8.5pt; font-weight: 650; letter-spacing: .2em; text-transform: uppercase; color: var(--brand);
+  }
+  .cover h1 { font-size: 34pt; font-weight: 700; margin: 4mm 0 5mm; letter-spacing: -.01em; }
+  .cover .lede { font-size: 12.5pt; color: var(--muted); max-width: 140mm; }
+  .cover .toc { margin-top: auto; border-top: 1px solid var(--line); padding-top: 6mm; }
+  .cover .toc p.label {
+    font-size: 8pt; font-weight: 650; letter-spacing: .18em; text-transform: uppercase; color: var(--soft);
+    margin-bottom: 3mm;
+  }
+  .cover .toc ol { list-style: none; padding: 0; columns: 2; column-gap: 10mm; margin: 0; }
+  .cover .toc li { margin-bottom: 2mm; break-inside: avoid; }
+  .cover .toc li span { color: var(--brand); font-weight: 650; display: inline-block; width: 7mm; }
+  .cover .meta { margin-top: 8mm; font-size: 8.5pt; color: var(--soft); }
+
+  section { margin-bottom: 7mm; }
+  section.page { break-before: page; }
+
+  figure { width: 136mm; margin: 4mm auto 5mm; break-inside: avoid; }
+  figure img {
+    display: block; width: 100%; height: auto;
+    border: 1px solid var(--line); border-radius: 1.5mm;
+  }
+  figcaption { margin-top: 2mm; font-size: 8.5pt; color: var(--soft); }
+  figcaption b { color: var(--ink); font-weight: 650; }
+
+  .note {
+    border: 1px solid var(--brand-line); background: var(--brand-soft);
+    border-radius: 1.5mm; padding: 3mm 4mm; margin: 4mm 0; break-inside: avoid;
+  }
+  .note.warn { border-color: var(--warn-line); background: var(--warn-soft); }
+  .note p:last-child, .note ul:last-child { margin-bottom: 0; }
+  .note .label {
+    font-size: 7.5pt; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--brand); margin-bottom: 1mm;
+  }
+  .note.warn .label { color: var(--warn); }
+
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 4mm; font-size: 9.5pt; break-inside: avoid; }
+  th, td { text-align: left; vertical-align: top; padding: 2mm 3mm 2mm 0; border-bottom: 1px solid var(--line); }
+  th { font-size: 7.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+  td:first-child { font-weight: 600; }
+
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 8mm; margin-bottom: 2mm; }
+  .steps > li::before {
+    content: counter(s);
+    position: absolute; left: 0; top: .2mm;
+    width: 5mm; height: 5mm; border-radius: 50%;
+    background: var(--brand); color: #fff; font-size: 7.5pt; font-weight: 700;
+    display: grid; place-items: center;
+  }
+  dl { margin: 0; }
+  dt { font-weight: 650; margin-top: 3.5mm; break-after: avoid; }
+  dd { margin: 1mm 0 0; color: var(--ink); }
+  figure.card { width: 120mm; }
+  figure.tall { width: 108mm; }
+  .split { display: grid; grid-template-columns: 1fr 58mm; gap: 8mm; align-items: start; }
+  .split figure { width: 100%; margin: 1mm 0 0; }
+  code { font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <div class="mark">{{logo letter or emoji}}</div>
+    <div>{{Product name}}<small>{{TAGLINE}}</small></div>
+  </div>
+  <div class="title">
+    <p class="eyebrow">{{Guide utilisateur}}</p>
+    <h1>{{Feature name}}</h1>
+    <p class="lede">{{One sentence: what this feature lets the user do.}}</p>
+  </div>
+  <div class="toc">
+    <p class="label">{{Sommaire}}</p>
+    <ol>
+      <li><span>1</span>{{À quoi sert …}}</li>
+      <li><span>2</span>{{Prérequis}}</li>
+      <li><span>3</span>{{Task section}}</li>
+      <li><span>4</span>{{Bonnes pratiques et limites}}</li>
+      <li><span>5</span>{{Messages et solutions}}</li>
+    </ol>
+    <p class="meta">{{Version du [date]. Captures réalisées sur …}}</p>
+  </div>
+</div>
+
+<section>
+  <h2><span class="num">1</span>{{À quoi sert …}}</h2>
+  <p>{{What it does and why the user would use it.}}</p>
+  <div class="note">
+    <p class="label">{{D'où viennent les données}}</p>
+    <ul>
+      <li><strong>{{Data}}</strong> : {{source}}.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">2</span>{{Prérequis}}</h2>
+  <ol class="steps">
+    <li>{{Open <span class="ui">Exact menu label</span>.}}</li>
+    <li>{{Click <span class="ui">Exact button label</span>.}}</li>
+  </ol>
+</section>
+
+<section class="page">
+  <h2><span class="num">3</span>{{Task section}}</h2>
+  <p>{{What happens, and how long it takes.}}</p>
+  <figure>
+    <img src="captures/{{slug}}/01-{{name}}.png" alt="{{What the screenshot shows}}">
+    <figcaption><b>Figure 1.</b> {{Caption}}</figcaption>
+  </figure>
+  <div class="split">
+    <div><p>{{Text beside a narrow capture.}}</p></div>
+    <figure>
+      <img src="captures/{{slug}}/02-{{name}}.png" alt="{{…}}">
+      <figcaption><b>Figure 2.</b> {{Caption}}</figcaption>
+    </figure>
+  </div>
+  <div class="note warn">
+    <p class="label">{{Attention}}</p>
+    <p>{{Cost, irreversible action or known limit.}}</p>
+  </div>
+</section>
+
+<section class="page">
+  <h2><span class="num">4</span>{{Bonnes pratiques et limites}}</h2>
+  <ul>
+    <li>{{…}}</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">5</span>{{Messages et solutions}}</h2>
+  <table>
+    <tr><th>{{Message}}</th><th>{{Cause}}</th><th>{{Que faire}}</th></tr>
+    <tr><td>{{« Exact message »}}</td><td>{{…}}</td><td>{{…}}</td></tr>
+  </table>
+</section>
+
+</body>
+</html>
