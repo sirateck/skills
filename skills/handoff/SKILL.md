@@ -3,7 +3,7 @@ name: handoff
 description: Write or refresh a handoff file at the project root (HANDOFF.md, or HANDOFF-<name>.md for a named workstream) so the work can resume in a fresh session without losing context. "/handoff resume [name]" reads it, checks it against git, and offers to start the next step; "/handoff list" shows every handoff; "/handoff delete [name]" removes a finished one.
 argument-hint: "[name] | resume [name] | list | delete [name]"
 disable-model-invocation: true
-allowed-tools: Bash(git rev-parse *) Bash(git branch *) Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git ls-files *) Bash(date *)
+allowed-tools: Bash(git rev-parse *) Bash(git branch *) Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git ls-files *) Bash(date *) mcp__ccd_session_mgmt__set_session_title
 ---
 
 # Handoff
@@ -111,8 +111,12 @@ Then end with:
 1. **Pick the file**:
    - With a name: `HANDOFF-<name>.md`. If it doesn't exist, say so, show the List mode table if any handoff exists, and stop.
    - Without a name: if no handoff file exists, say so, suggest running `/handoff` (or `/handoff <name>`) at the end of a session, and stop. If exactly one exists, use it. If several exist, show the List mode table, ask which one to resume, and stop until the user answers.
-2. **Summarize** in at most 5 lines: the goal, the current state, where work stopped, the next step, and how old the file is (from its header).
-3. **Check against git** (if not a repo, say the check was skipped):
+2. **Name the session** after the workstream, so it isn't left titled "handoff resume":
+   - **Title**: 3–6 words that say what the work is about, drawn from "Goal" (e.g. `Migration DB vers Postgres`, `Fix auth refresh tokens`). For a named handoff, the name may lead (`migration: users table to Postgres`). Same language as the handoff file, at most 50 characters, no trailing punctuation, and never the words "handoff" or "resume".
+   - **Desktop app**: if the tool `mcp__ccd_session_mgmt__set_session_title` exists (load it with ToolSearch `select:mcp__ccd_session_mgmt__set_session_title` if it is only listed as deferred), call it with `session_id: "self"` and the title. If the user declines or the call fails, don't retry.
+   - **Otherwise** (terminal CLI, where the model can't rename the session): end the summary below with one line: ``Rename this session: `/rename <title>` ``.
+3. **Summarize** in at most 5 lines: the goal, the current state, where work stopped, the next step, and how old the file is (from its header).
+4. **Check against git** (if not a repo, say the check was skipped):
    - Branch: current branch vs the header's branch.
    - Commits since the handoff: `git log --oneline <last commit>..HEAD` (fall back to `git log --oneline --since="<header date and time>"` if that hash is unknown).
    - Working tree: `git status --short` and `git diff --stat` vs "In progress": uncommitted changes the file doesn't mention, or described work that is no longer there. Changes that clearly belong to another named handoff are not discrepancies; say which one they belong to.
@@ -121,7 +125,7 @@ Then end with:
    - Ignore every handoff file in these checks.
 
    Report a **Discrepancies** list, or "No discrepancies found."
-4. **Offer** to start on the next step: restate it and ask whether to begin. If discrepancies make it questionable, say so and propose an adjusted step. Don't edit files or run anything beyond the read-only checks above until the user says yes.
+5. **Offer** to start on the next step: restate it and ask whether to begin. If discrepancies make it questionable, say so and propose an adjusted step. Don't edit files or run anything beyond the read-only checks above until the user says yes.
 
 ## List mode
 
