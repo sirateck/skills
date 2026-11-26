@@ -1,20 +1,20 @@
 ---
 name: standup
-description: Recap a project's progress as a standup (done / next / blockers) from git history, GitHub PRs, the project's HANDOFF files and, when the project's Aporia MCP server is connected, the Aporia tickets and features the work touched. Read-only. Use for "/standup", a daily standup, "recap", "where are we on this project", "what did I do yesterday / this week", or a progress update to share.
+description: Recap a project's progress as a standup (done / next / blockers) from git history, GitHub PRs, the project's HANDOFF files and, when the project's Aporia MCP server is connected, the Aporia tasks and specifications the work touched. Read-only. Use for "/standup", a daily standup, "recap", "where are we on this project", "what did I do yesterday / this week", or a progress update to share.
 argument-hint: "[today | yesterday | week | <N>d | since <YYYY-MM-DD>]"
-allowed-tools: Bash(git rev-parse *) Bash(git config *) Bash(git log *) Bash(git branch *) Bash(git status *) Bash(git diff *) Bash(git for-each-ref *) Bash(git remote *) Bash(gh pr list *) Bash(gh pr view *) Bash(gh auth status *) Bash(date *) mcp__aporia__pull_constitution mcp__aporia__search_graph mcp__aporia__pull_context mcp__aporia__feature_gaps_spec
+allowed-tools: Bash(git rev-parse *) Bash(git config *) Bash(git log *) Bash(git branch *) Bash(git status *) Bash(git diff *) Bash(git for-each-ref *) Bash(git remote *) Bash(gh pr list *) Bash(gh pr view *) Bash(gh auth status *) Bash(date *) mcp__aporia__get_context mcp__aporia__list_tasks mcp__aporia__get_task mcp__aporia__list_specs mcp__aporia__get_spec mcp__aporia__list_ideas mcp__aporia__get_idea
 ---
 
 # Standup
 
 Arguments: `$ARGUMENTS`
 
-Produce a short, shareable progress recap for the **current project**, from what the repository and its tools actually show. Never invent work, plans or blockers: every bullet traces to a commit, a PR, a handoff file, an Aporia item, or something the user said in this session.
+Produce a short, shareable progress recap for the **current project**, from what the repository and its tools actually show. Never invent work, plans or blockers: every bullet traces to a commit, a PR, a handoff file, an Aporia task or specification, or something the user said in this session.
 
 ## Hard rules
 
-- **Read-only.** Change nothing: no commit, no push, no file written, no PR or ticket touched.
-- **Aporia is read-only too.** Allowed: `pull_constitution`, `search_graph`, `pull_context`, `feature_gaps_spec`, `fetch_personas`, `fetch_principles`, `read_attachment`, and `pull_item` **without `claim`** (omit the field; never pass `claim: true`, which assigns the ticket). Forbidden: `record_notes`, `comment_item`, `update_item`, `update_node`, `resolve_items`, `apply_scan`, `attach_file`, `record_process`, every `upsert_*`. Writing back to the map is the job of the `aporia-*` skills; this skill only *suggests* running them.
+- **Read-only.** Change nothing: no commit, no push, no file written, no PR or Aporia task touched.
+- **Aporia is read-only too.** Allowed: `get_context`, `list_tasks`, `get_task`, `list_specs`, `get_spec`, `list_ideas`, `get_idea` (and `get_architecture`, `read_attachment` if ever needed). Forbidden: `take_task` (it moves the task to In progress and makes the user its owner), `report_task`, `create_task`, `update_task`, `deposit_idea`, `add_clause`, `revise_clause`, `write_intention`, `record_session_notes`, `attach_file`, and every other tool that writes (`create_specs`, `propose_spec_update`, `write_schema`, `write_architecture`, `propose_persona`, `link_personas`). Writing back to Aporia is the job of the `aporia-*` skills (`/aporia-report` above all); this skill only *suggests* running them.
 - **Language.** Write the standup in the language the user is speaking (headings included).
 - **Secrets.** Never print tokens, keys or `.env` contents, even if a commit message or PR body contains one.
 
@@ -45,7 +45,7 @@ Anything else: reply with the forms in this table and stop. Get today's date wit
 **Branches.** `git branch --show-current`, `git status --short`, and `git for-each-ref --sort=-committerdate --format="%(refname:short) %(committerdate:short) %(upstream:track)" refs/heads` for local branches touched in the period (unpushed work shows as `[ahead N]`).
 
 **GitHub PRs** (only if `git remote -v` points at github.com and `gh auth status` succeeds; otherwise skip silently):
-- `gh pr list --author @me --state all --search "updated:>=<since as YYYY-MM-DD>" --json number,title,body,state,url,headRefName,isDraft,reviewDecision,mergedAt,statusCheckRollup --limit 30` (`body` is only scanned for ticket ids in step 3; never quote it).
+- `gh pr list --author @me --state all --search "updated:>=<since as YYYY-MM-DD>" --json number,title,body,state,url,headRefName,isDraft,reviewDecision,mergedAt,statusCheckRollup --limit 30` (`body` is only scanned for task numbers in step 3; never quote it).
 - From `statusCheckRollup`, a PR is **failing** if any check concluded `FAILURE`, `TIMED_OUT` or `CANCELLED`.
 
 **Handoff files.** Read `<root>/HANDOFF.md` and `<root>/HANDOFF-*.md` if any (written by the `handoff` skill). Their "In progress", "To do" and "Next step" sections feed **Next**; their age matters (older than 14 days = stale, mention it).
@@ -54,57 +54,62 @@ Anything else: reply with the forms in this table and stop. Get today's date wit
 
 ## 3. Aporia (only when connected)
 
-Aporia is connected when the tools of the `aporia` MCP server are available in this session (e.g. `aporia:pull_constitution`). If they aren't, skip this whole section silently, with one exception: if `<root>/.agents/skills/aporia-*` or `<root>/.claude/skills/aporia-*` exists, add one line at the end saying the Aporia MCP server isn't connected in this session, so tickets weren't checked.
+Aporia is connected when the tools of the `aporia` MCP server are available in this session (e.g. `aporia:get_context`). If they aren't, skip this whole section silently, with one exception: if `<root>/.agents/skills/aporia-*` or `<root>/.claude/skills/aporia-*` exists, add one line at the end saying the Aporia MCP server isn't connected in this session, so tasks weren't checked.
 
-1. `aporia:pull_constitution`: take `product.shortCode` (e.g. `NEW`) and `product.name`. Ticket ids belong to **this** product only.
-2. **Find the tickets the work touched.** Collect every `<shortCode>-<n>` (case-insensitive, e.g. `new-8-coupon-fix`, `NEW-8`, `[NEW-8]`) found in branch names, commit subjects, and PR titles, branches and bodies from step 2, plus any ticket the HANDOFF files or the conversation mention. Deduplicate. Cap at 10, most recent first; say if some were left out.
-3. **Read each ticket:** `aporia:pull_item { ticket }`, **without `claim`**. Keep: kind, title, status (open / resolved / superseded), priority, claimedAt / assignee, and the map targets' feature keys.
-4. **Features (at most 3,** the ones the tickets target most): `aporia:feature_gaps_spec { key }`. Keep: `built`, `readiness.status` (`ready` / `blocked` / `already_complete`) and why it is blocked, the count of `unbuilt` bindings, open questions on the critical path, and `openWork` items not already listed.
-5. **Cross-check code vs map** (this is the coupling that matters):
-   - A ticket's PR is **merged** but the ticket is still **open** → it needs a sync: suggest `/aporia-sync`.
-   - A ticket is **resolved** but its branch still has unmerged commits → flag the mismatch.
-   - The session or the commits clearly settled a decision or raised an open question that isn't on the map → suggest `/aporia-session-notes` (don't file anything).
-   - A feature is `blocked` on open questions → those questions are **blockers**, with who owes the answer if the item says so.
+In Aporia, work is a **task** on a board, numbered `<prefix>-<n>` (e.g. `NEW-8`); a task may serve a **specification** (a key like `billing.invoices`, with an intention, criteria and rules). Board columns: Ready, Blocked and In progress belong to humans; On staging and In production are moved by git, when a pull request carrying the task's number deploys. A merged PR does not mean the task is in production.
 
-Never resolve, comment or claim to "fix" a mismatch: list it under **To sync** and name the skill that handles it.
+1. `aporia:get_context`: take `product.name`, `product.shortCode` (the prefix, e.g. `NEW`) and the link template `ticketUrl`. Task numbers belong to **this** product only; ignore any other prefix.
+2. **Find the tasks the work touched.** Collect every `<shortCode>-<n>` (case-insensitive: `new-8-persist-the-coupon`, `NEW-8`, `[NEW-8]`) found in branch names, commit subjects, and PR titles, branches and bodies from step 2, plus any task the HANDOFF files or the conversation mention. Deduplicate. Cap at 10, most recent first; say if some were left out.
+3. **The user's own board:** `aporia:list_tasks { mine: true }` (send `next` back unchanged if `truncated`). It gives the tasks they own In progress, Blocked or Ready, even those no commit names. If **Next** has no evidence yet, `aporia:list_tasks { takeable: true }` gives the next task they could start (its first row).
+4. **Read each task** from step 2: `aporia:get_task { task }` (a read; never `take_task`, which takes it). Add `workOrder: false` when only its stage and pull requests matter. Keep: number, `url`, title, type, `stage`, `owner` / `mine`, `blockedReason`, `waitsFor`, `pullRequests`, `release`, `lastActivityAt`, and the key of its specification.
+5. **Specifications (at most 3,** the ones the tasks serve most): `aporia:get_spec { spec }`. Keep: whether its intention is signed, how many criteria the latest reports call `covered` / `notCovered` / `notVerified`, and its open tasks not already listed.
+6. **Cross-check code vs board** (this is the coupling that matters):
+   - Work in the period that carries **no task number** (commits, branch or PR) → it ships under no task: suggest `/aporia-report`, which files a task for it.
+   - A PR of the period names a task but the task lists no such PR in `pullRequests` → the PR isn't linked (the number must be in its branch or title), so it will never carry the task to production: flag it.
+   - A task was worked in the period but its `lastActivityAt` is older than `<since>` → the work wasn't reported on the task: suggest `/aporia-report`.
+   - The session or the commits clearly settled a decision, a rule or an open question that isn't in Aporia → suggest `/aporia-report` (it routes ideas, clauses and session notes; don't file anything).
+   - A task is **Blocked** → its `blockedReason` is a **blocker**. A task `waitsFor` another still open → a dependency, list it under **Blockers** when it stops the work.
+   - A specification being worked has an **unsigned** intention → it's a draft waiting for a human signature: say so.
+
+Never move, report, comment or claim to "fix" a mismatch: list it under **To sync** and name the skill that handles it.
 
 ## 4. Write the standup
 
-Group work by **topic** (one ticket, one PR or one branch = one bullet), never one bullet per commit. Say what changed for the product, not the mechanics ("coupon validation now rejects expired codes", not "edit coupon.ts"). Cite references inline: ticket id, PR as a markdown link with its full URL (`[#12](https://github.com/owner/repo/pull/12)`), short commit hash only when there is no PR.
+Group work by **topic** (one task, one PR or one branch = one bullet), never one bullet per commit. Say what changed for the product, not the mechanics ("coupon validation now rejects expired codes", not "edit coupon.ts"). Cite references inline: task number (linked with `ticketUrl` when Aporia is connected), PR as a markdown link with its full URL (`[#12](https://github.com/owner/repo/pull/12)`), short commit hash only when there is no PR.
 
 ```markdown
 ## Standup — <project>[ · Aporia: <product name>] · <date>
 _Period: since <since> · Branch: `<current branch>`_
 
 ### Done
-- <outcome> — `<TICKET>` · [#<n>](<url>) merged
+- <outcome> — `<TASK>` · [#<n>](<url>) merged
 
 ### In progress
 - <what> — `<branch>`<, unpushed: N commits><, PR [#n](<url>) open / draft / changes requested / CI failing>
 
 ### Next
-- <from HANDOFF "Next step"/"To do", open claimed tickets, open PRs awaiting something>
+- <from HANDOFF "Next step"/"To do", the user's Ready or In progress tasks, open PRs awaiting something>
 
 ### Blockers
 - <blocker> — <why, who can unblock>
 
 ### Product side (Aporia)
-- `<TICKET>` <kind> · <status> — <title>
-- Feature `<name>`: <built | not built> · <ready | blocked: reason> · <N> bindings left to build
+- `<TASK>` <type> · <stage> — <title><, blocked: reason>
+- Spec `<key>`: <N>/<M> criteria covered<, intention unsigned><, K open tasks>
 
 ### To sync
-- <mismatch> → `/aporia-sync` | `/aporia-session-notes`
+- <mismatch> → `/aporia-report` | link the PR to `<TASK>`
 ```
 
 - Omit **Product side** and **To sync** when Aporia isn't connected or has nothing to say. Write "None." under Done / In progress / Next / Blockers when empty, rather than dropping them.
-- **Blockers** are only real ones: a failing check, changes requested, an unanswered blocking question, an external dependency named in a handoff or the conversation. No speculative risks.
-- **Next** comes only from evidence (handoff, open PRs, claimed or open tickets, what the user said). If there is none, write "None." and, in the closing line, ask the user what they plan.
+- **Blockers** are only real ones: a failing check, changes requested, a Blocked task with its reason, an open task this one waits for, an external dependency named in a handoff or the conversation. No speculative risks.
+- **Next** comes only from evidence (handoff, open PRs, the user's Ready or In progress tasks, the next takeable task, what the user said). If there is none, write "None." and, in the closing line, ask the user what they plan.
 - Keep the whole thing under ~30 lines. If the period had nothing, say "No activity since <since>" and offer a wider period (e.g. `/standup week`).
 
 ## 5. After the standup
 
 End with at most two short lines:
-- what was skipped and why (no GitHub access, Aporia not connected, tickets capped, stale handoff);
-- the single most useful follow-up, if any (`/aporia-sync`, `/aporia-session-notes`, `/handoff`, or a reformat: "I can reformat it for Slack or email").
+- what was skipped and why (no GitHub access, Aporia not connected, tasks capped, stale handoff);
+- the single most useful follow-up, if any (`/aporia-report`, `/aporia-work <TASK>` for the next task, `/handoff`, or a reformat: "I can reformat it for Slack or email").
 
 Run nothing else. Don't offer to commit or post anything.
